@@ -1,0 +1,7 @@
+*.iml
+.idea/
+.idea_templates/
+.idea_modules/
+target/
+.history
+*~
