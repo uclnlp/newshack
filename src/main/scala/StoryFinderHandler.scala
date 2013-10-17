@@ -17,7 +17,7 @@ class StoryFinderGetHandler extends Actor {
       val qsMap = event.endPoint.queryStringMap
       println(qsMap)
       val ids = qsMap("id")
-      val stories = ids.map(id => StoryFinder.storyQuery(id))
+      val stories = StoryFinder.storyQueryWithMultipleIds(ids)
       //event.response.write("Hello from Socko (" + new Date().toString + ")")
       event.response.write("[" + stories.mkString(",\n") + "]")
       context.stop(self)
