@@ -12,10 +12,19 @@ object StoryFinder extends App {
     val stories = FrontletListSlot("stories", () => new Story)
   }
 
-  class Story extends Frontlet {
-    val label = StringSlot("label")
-    //val occurrence = StringSlot("occurrence")
+
+  class Article extends Frontlet {
+    val date = StringSlot("date")
+    val uri = StringSlot("uri")
+    val title = StringSlot("title")
   }
+
+  class Story extends Frontlet {
+    val date = StringSlot("date")
+    val title = StringSlot("title")
+    val tagged = FrontletListSlot("tagged", () => new Article)
+  }
+
 
   def storyQuery(id:String, limit:Int = 5) = {
     val result = Http("http://triplestore.bbcnewslabs.co.uk//api/things").
@@ -34,10 +43,17 @@ object StoryFinder extends App {
     val merged = perIdResults.map(_.toSet).reduce(_ ++ _)
     merged.take(5).toSeq
   }
-  
+
   val dbpediaIds = args
-  val result = searchStory(dbpediaIds)
-  println(result.mkString("\n"))
+  val stories = searchStory(dbpediaIds)
+  println(stories.mkString("\n"))
+  stories.foreach(story => {
+    println("Title: " + story.title())
+    story.tagged().take(5).foreach(article => {
+      println("\tArticle: " + article.title())
+      println("\t\tURI:" + article.uri())
+    })
+  })
 }
 
 /*
