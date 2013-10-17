@@ -40,49 +40,39 @@ object StoryFinder extends App {
     if (ids.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: result.toList
     else result.toList
   }
+
+  def dummySimFunction(string1: String, string2: String): Double = if (string2.isEmpty) 0.0 else 1.0
+
+  def storyToString(story: Story): String =
+    story.tagged().map(article => {
+      //too small, hence commented out
+      //ArticleParser.extract(article.uri())
+      ""
+    }).mkString("\n")
   
   def queryWithMultipleIds(ids:Seq[String], limit:Int = 5, numStories:Int = 3, numArticles: Int = 5, numIdCombinations: Int = 5) = {
     val parameters = ids.map(id => ("tag",id)).toList ++
       List("class" -> "http://purl.org/ontology/storyline/Storyline",
-           "limit" -> limit.toString,
+           //fetching a bit more stories to have enough instances for ranking
+           "limit" -> (limit*2).toString,
            "tagop" -> "and")
     val result = Http("http://triplestore.bbcnewslabs.co.uk//api/things").
       option(_.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2")).
       option(HttpOptions.connTimeout(10000)).
       option(HttpOptions.readTimeout(10000)).params(parameters)
     
-    val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}")
-    // filtering stories
-    val filteredStories = stories.stories().take(numStories).map(story => {
+    val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}").stories()
+    //rank stories by similarity to input text
+    //TODO get access to the input text over POST statement
+    val sortedStories = stories.map(story => (story, dummySimFunction("MY_MAGIC_INPUT_TEXT_STRING", storyToString(story)))).sortBy(_._2)
+
+    // using only top related stories
+    val filteredStories = sortedStories.take(numStories).map(_._1).map(story => {
       story.tagged := story.tagged().take(numArticles)
     })
     val resultStories = new JuicerResult().stories(filteredStories)
     resultStories.refId := ids
     resultStories
-  }
-
-  def storyQuery(id:String, limit:Int = 5, numStories:Int = 3, numArticles: Int = 5) = {
-    val result = Http("http://triplestore.bbcnewslabs.co.uk//api/things").
-      option(_.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2")).
-      option(HttpOptions.connTimeout(10000)).
-      option(HttpOptions.readTimeout(10000)).params(
-        "id" -> id,
-        "class" -> "http://purl.org/ontology/storyline/Storyline",
-        "limit" -> limit.toString
-      )
-    val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}")
-    // filtering stories
-    val filteredStories = stories.stories().take(numStories).map(story => {
-      story.tagged := story.tagged().take(numArticles)
-    })
-    val resultStories = new JuicerResult().stories(filteredStories)
-    resultStories.refId := List(id)
-    resultStories
-  }
-
-  def searchStory(ids:Seq[String]):Seq[Story] = {
-    val perIdResults = ids.map(id => storyQuery(id).stories())
-    perIdResults.map(_.toSet).reduce(_ ++ _).toSeq
   }
 
   val dbpediaIds = args
@@ -106,5 +96,5 @@ Examples:
 
 /find/story?id=http://dbpedia.org/resource/David_Cameron&id=http://dbpedia.org/resource/Nigel_Farage&limit=5
 
-will give you the storyline with David and Nigel bevore storylines with only one of them
+will give you the storyline with David and Nigel before story lines containing only one of them
 */

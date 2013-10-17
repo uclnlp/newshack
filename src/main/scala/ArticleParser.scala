@@ -15,15 +15,21 @@ object ArticleParser {
     val parser = new HTML5Parser
     val parsed = parser.loadString(html)
     var story: Node = null
+    println(URL)
     var article= Array("", "")
+    //rockt: this seems to be too slow
     for (n <- (parsed \\ "div")) {
       if ((n \ "@class").text == "story-body")
         story = n
     }
-    for (n <- (story \\ "h1"))
-      if ((n \ "@class").text == "story-header")
-        article(0) = n.text
-    article(1) = (story \\ "p").map(_.text).filter(_ != "Please turn on JavaScript. Media requires JavaScript to play.").mkString(" ")
+    try {
+      for (n <- (story \\ "h1"))
+        if ((n \ "@class").text == "story-header")
+          article(0) = n.text
+      } catch { case e:NullPointerException => /* ignore */ }
+    try {
+      article(1) = (story \\ "p").map(_.text).filter(_ != "Please turn on JavaScript. Media requires JavaScript to play.").mkString(" ")
+    } catch { case e:NullPointerException => /* ignore */ }
     article
   }
 
