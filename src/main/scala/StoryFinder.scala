@@ -31,10 +31,11 @@ object StoryFinder extends App {
         for {
           i <- (2 to numCombinations).reverse
           tags <- ids.combinations(i)
-        } yield queryWithMultipleIds(tags)        
-      } else Nil  
+        } yield queryWithMultipleIds(tags)
+      } else Nil
     val combinedQuery = queryWithMultipleIds(ids)
     val singleQueries = ids.map(id => queryWithMultipleIds(List(id)))
+
     val result = (queryCombinations ++ singleQueries).filter(story => !story.stories().isEmpty)
 
     if (ids.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: result.toList
@@ -45,7 +46,7 @@ object StoryFinder extends App {
 
   def storyToString(story: Story): String =
     story.tagged().map(article => {
-      //too small, hence commented out
+      //rockt: too slow, hence currently commented out
       //ArticleParser.extract(article.uri())
       ""
     }).mkString("\n")
@@ -63,7 +64,7 @@ object StoryFinder extends App {
     
     val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}").stories()
     //rank stories by similarity to input text
-    //TODO get access to the input text over POST statement
+    //TODO get access to the input text over Postman POST statement
     val sortedStories = stories.map(story => (story, dummySimFunction("MY_MAGIC_INPUT_TEXT_STRING", storyToString(story)))).sortBy(_._2)
 
     // using only top related stories
@@ -94,7 +95,8 @@ object StoryFinder extends App {
 /*
 Examples:
 
+will give you the storyline with David and Nigel before story lines that contain only one of them:
 /find/story?id=http://dbpedia.org/resource/David_Cameron&id=http://dbpedia.org/resource/Nigel_Farage&limit=5
 
-will give you the storyline with David and Nigel before story lines containing only one of them
+
 */
