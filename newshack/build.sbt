@@ -18,6 +18,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+     "org.scalaj" %% "scalaj-http" % "0.3.10",
      "org.riedelcastro.frontlets" %% "frontlets" % "0.5.0-SNAPSHOT"
 )
 
