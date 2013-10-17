@@ -26,7 +26,7 @@ object StoryFinder extends App {
   }
 
 
-  def storyQuery(id:String, limit:Int = 5) = {
+  def storyQuery(id:String, limit:Int = 5, numStories:Int = 3, numArticles: Int = 5) = {
     val result = Http("http://triplestore.bbcnewslabs.co.uk//api/things").
       option(_.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2")).
       option(HttpOptions.connTimeout(10000)).
@@ -35,13 +35,18 @@ object StoryFinder extends App {
       "class" -> "http://purl.org/ontology/storyline/Storyline",
       "limit" -> limit.toString
     )
-    new JuicerResult().setJSON("{\"stories\": " + result.asString + "}")
+    val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}")
+    // filtering stories
+    val filteredStories = stories.stories().take(numStories).map(story => {
+      story.tagged := story.tagged().take(numArticles)
+    })
+
+    new JuicerResult().stories(filteredStories)
   }
 
   def searchStory(ids:Seq[String]):Seq[Story] = {
     val perIdResults = ids.map(id => storyQuery(id).stories())
-    val merged = perIdResults.map(_.toSet).reduce(_ ++ _)
-    merged.take(5).toSeq
+    perIdResults.map(_.toSet).reduce(_ ++ _).toSeq
   }
 
   val dbpediaIds = args
@@ -49,7 +54,7 @@ object StoryFinder extends App {
   println(stories.mkString("\n"))
   stories.foreach(story => {
     println("Title: " + story.title())
-    story.tagged().take(5).foreach(article => {
+    story.tagged().foreach(article => {
       println("\tArticle: " + article.title())
       println("\t\tURI:" + article.uri())
     })

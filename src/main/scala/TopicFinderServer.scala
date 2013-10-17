@@ -13,7 +13,7 @@ import akka.actor.Props
  * - GET requests: /find/id=http://dbpedia.org/resource/David_Cameron&id=http://dbpedia.org/resource/Barack_Obama
  */
 object TopicFinderServer extends Logger {
-  //
+  //TODO integrate StoryFinderServer into this class
   // STEP #1 - Define Actors and Start Akka
   // See `HelloHandler`
   //
@@ -25,12 +25,12 @@ object TopicFinderServer extends Logger {
   // `HelloHandler` will `stop()` itself after processing each request.
   //
   val routes = Routes({
-    case GET(request@Path("/find")) => {
-      actorSystem.actorOf(Props[TopicFinderGetHandler]) ! request
-    }
-    case POST(request@Path("/find")) => {
-      actorSystem.actorOf(Props[TopicFinderPostHandler]) ! request
-    }
+    //topic finder
+    case GET(request@Path("/find/topic")) => actorSystem.actorOf(Props[TopicFinderGetHandler]) ! request
+    case POST(request@Path("/find/topic")) => actorSystem.actorOf(Props[TopicFinderPostHandler]) ! request
+    //story finder
+    case GET(request@Path("/find/story")) => actorSystem.actorOf(Props[StoryFinderGetHandler]) ! request
+    case POST(request@Path("/find/story")) => actorSystem.actorOf(Props[StoryFinderPostHandler]) ! request
     case request =>
       println(request)
       println("Can't handle this")
