@@ -14,12 +14,14 @@ scalaVersion := "2.10.0"
 resolvers ++= Seq(
     "IESL third party" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/thirdparty/",
     "IESL snapshots" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/snapshots",
-    "IESL releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases"
+    "IESL releases" at "https://dev-iesl.cs.umass.edu/nexus/content/repositories/releases",
+    "sbt-idea-repo" at "http://mpeltonen.github.com/maven/"
 )
 
 libraryDependencies ++= Seq(
      "org.scalaj" %% "scalaj-http" % "0.3.10",
-     "org.riedelcastro.frontlets" %% "frontlets" % "0.5.0-SNAPSHOT"
+     "org.riedelcastro.frontlets" %% "frontlets" % "0.5.0-SNAPSHOT",
+     "com.github.mpeltonen" % "sbt-idea" % "1.0.0"
 )
 
 scalacOptions ++= Seq("-unchecked","-deprecation")
