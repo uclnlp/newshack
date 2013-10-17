@@ -13,7 +13,7 @@ class TopicFinderGetHandler extends Actor {
       val ids = qsMap("id")
       val result = TopicFinder.searchByCooccurrence(ids)
       //event.response.write("Hello from Socko (" + new Date().toString + ")")
-      event.response.write(result.mkString("\n"))
+      event.response.write("[" + result.mkString(",\n") + "]")
       context.stop(self)
   }
 }
