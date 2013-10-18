@@ -34,7 +34,7 @@ object StoryFinder extends App {
 
   def queryCombinations(ids: Seq[String], numCombinations: Int = 5, numStoryContainers: Int = 4) = {
     val queryCombinations =
-      if (ids.size < numCombinations && ids.size >= 2) {
+      if (ids.size <= 2*numCombinations && ids.size >= 2) {
         for {
           i <- (2 to numCombinations).reverse
           tags <- ids.combinations(i)
