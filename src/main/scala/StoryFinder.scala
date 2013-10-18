@@ -14,6 +14,7 @@ object StoryFinder extends App {
   class JuicerResult extends Frontlet {
     val stories = FrontletListSlot("stories", () => new Story)
     val refId = StringListSlot("refId")
+    val sim = DoubleSlot("sim")
   }
 
   class Article extends Frontlet {
@@ -30,7 +31,7 @@ object StoryFinder extends App {
     val sim = DoubleSlot("sim")
   }  
 
-  def queryCombinations(ids: Seq[String], numCombinations: Int = 5) = {
+  def queryCombinations(ids: Seq[String], numCombinations: Int = 5, numStoryContainers: Int = 3) = {
     val queryCombinations =
       if (ids.size < numCombinations && ids.size >= 2) {
         for {
@@ -41,10 +42,14 @@ object StoryFinder extends App {
     val combinedQuery = queryWithMultipleIds(ids)
     val singleQueries = ids.map(id => queryWithMultipleIds(List(id)))
 
-    val result = (queryCombinations ++ singleQueries).filter(story => !story.stories().isEmpty)
+    val tempResult = (queryCombinations ++ singleQueries).filter(story => !story.stories().isEmpty)
 
-    if (ids.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: result.toList
-    else result.toList
+    if (ids.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: tempResult.toList
+    else tempResult.toList
+
+    val sortedResult = tempResult.sortBy(-_.sim()).take(numStoryContainers)
+
+    sortedResult
   }
 
   def storyToString(story: Story): String =
@@ -83,6 +88,8 @@ object StoryFinder extends App {
       }).sortBy(-_.sim()).take(numStories)
     val resultStories = new JuicerResult().stories(filteredStories)
     resultStories.refId := ids
+    val sims = filteredStories.map(_.sim())
+    resultStories.sim := sims.sum / (1.0 * sims.size) 
     resultStories
   }
 
