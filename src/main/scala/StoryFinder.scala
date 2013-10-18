@@ -65,15 +65,22 @@ object StoryFinder extends App {
       container.stories := filteredStories
     })
 
-    /*
     //re-calculating container similarities
     sortedResult.foreach(container => {
-      val sim = container.stories().map(_.sim())
-      container.sim := sim.sum / (1.0 * sim.size)
+      val stories = container.stories()
+      val sims = List(1.0)
+      var aggr = 0.0
+      var counter = 0
+      stories.map(s => {
+        aggr += s.sim()
+        counter += 1
+        s
+      }) //cumbersome, but otherwise the stories get erased. bug in Frontlet?
+      container.sim := (if (counter == 0) 0.0 else aggr / counter)
+      container
     })
 
     sortedResult.sortBy(-_.sim())
-    */
     sortedResult
   }
 
