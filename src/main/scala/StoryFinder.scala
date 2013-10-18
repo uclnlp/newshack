@@ -33,19 +33,20 @@ object StoryFinder extends App {
   }  
 
   def queryCombinations(ids: Seq[String], numCombinations: Int = 5, numStoryContainers: Int = 4) = {
+    val distinctIds = ids.toList.distinct
     val queryCombinations =
-      if (ids.size <= 2*numCombinations && ids.size >= 2) {
+      if (distinctIds.size <= 2*numCombinations && distinctIds.size >= 2) {
         for {
           i <- (2 to numCombinations).reverse
-          tags <- ids.combinations(i)
+          tags <- distinctIds.combinations(i)
         } yield queryWithMultipleIds(tags)
       } else Nil
-    val combinedQuery = queryWithMultipleIds(ids)
-    val singleQueries = ids.map(id => queryWithMultipleIds(List(id)))
+    val combinedQuery = queryWithMultipleIds(distinctIds)
+    val singleQueries = distinctIds.map(id => queryWithMultipleIds(List(id)))
 
     val tempResult = (queryCombinations ++ singleQueries).filter(story => !story.stories().isEmpty)
 
-    if (ids.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: tempResult.toList
+    if (distinctIds.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: tempResult.toList
     else tempResult.toList
 
     val sortedResult = tempResult.sortBy(-_.sim()).take(numStoryContainers)
@@ -98,9 +99,6 @@ object StoryFinder extends App {
       option(HttpOptions.readTimeout(10000)).params(parameters)
     
     val stories = new StoriesContainer().setJSON("{\"stories\": " + result.asString + "}").stories()
-
-    //rank stories by similarity to input text
-    //val sortedStories = stories.map(story => (story, similarity(currentInputText, storyToString(story)))).sortBy(-_._2)
 
     //using only top related stories
     val filteredStories = stories.take(numStories)
