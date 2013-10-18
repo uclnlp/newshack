@@ -65,6 +65,7 @@ object StoryFinder extends App {
       container.stories := filteredStories
     })
 
+    /*
     //re-calculating container similarities
     sortedResult.foreach(container => {
       val sim = container.stories().map(_.sim())
@@ -72,6 +73,8 @@ object StoryFinder extends App {
     })
 
     sortedResult.sortBy(-_.sim())
+    */
+    sortedResult
   }
 
   def storyToString(story: Story): String =
