@@ -24,7 +24,8 @@ object ArticleParser {
   }
 
   def similarity(string1: String, string2: String): Double =
-    similarity(getNormVector(string1,stopwords), getNormVector(string2,stopwords))
+    if (string1 == null || string2 == null || string1.isEmpty || string2.isEmpty) 0.0
+    else similarity(getNormVector(string1,stopwords), getNormVector(string2,stopwords))
 
   def time(f: => Unit) = {
     val s = System.currentTimeMillis
