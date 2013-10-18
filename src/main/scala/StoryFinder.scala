@@ -12,7 +12,7 @@ import ArticleParser._
 object StoryFinder extends App {
   var currentInputText: String = ""
 
-  class JuicerResult extends Frontlet {
+  class StoriesContainer extends Frontlet {
     val stories = FrontletListSlot("stories", () => new Story)
     val refId = StringListSlot("refId")
     val sim = DoubleSlot("sim")
@@ -65,8 +65,13 @@ object StoryFinder extends App {
       container.stories := filteredStories
     })
 
+    //re-calculating container similarities
+    sortedResult.foreach(container => {
+      val sim = container.stories().map(_.sim())
+      container.sim := sim.sum / (1.0 * sim.size)
+    })
 
-    sortedResult
+    sortedResult.sortBy(-_.sim())
   }
 
   def storyToString(story: Story): String =
@@ -82,7 +87,7 @@ object StoryFinder extends App {
       option(HttpOptions.connTimeout(10000)).
       option(HttpOptions.readTimeout(10000)).params(parameters)
     
-    val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}").stories()
+    val stories = new StoriesContainer().setJSON("{\"stories\": " + result.asString + "}").stories()
 
     //rank stories by similarity to input text
     //val sortedStories = stories.map(story => (story, similarity(currentInputText, storyToString(story)))).sortBy(-_._2)
@@ -103,7 +108,7 @@ object StoryFinder extends App {
         story.sim := sims.sum / (1.0 * sims.size)
         story
       }).sortBy(-_.sim()).take(numStories)
-    val resultStories = new JuicerResult().stories(filteredStories)
+    val resultStories = new StoriesContainer().stories(filteredStories)
     resultStories.refId := ids
     val sims = filteredStories.map(_.sim())
     resultStories.sim := sims.sum / (1.0 * sims.size) 
