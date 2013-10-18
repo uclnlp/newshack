@@ -32,30 +32,14 @@ object ArticleParser {
     System.currentTimeMillis - s
   }
 
-  def extract(URL: String): Array[String] = {
+  def extract(URL: String): String = {
     if (URL.startsWith("http://www.bbc.co.uk/news")) {
-      print("processing " + URL + "... ")
       val start = System.currentTimeMillis()
-      var article = Array("", "")
-      val html = getHTML(URL)
-      val parser = new HTML5Parser
-      val parsed = parser.loadString(html)
+      print("processing " + URL + "... ")
+      val tuple = getHTML(URL)
       println((System.currentTimeMillis() - start)/1000.0 + "ms")
-      var story: Node = null
-      try {
-        for (n <- (parsed \\ "div")) {
-          if ((n \ "@class").text == "story-body")
-            story = n
-        }
-        for (n <- (story \\ "h1"))
-          if ((n \ "@class").text == "story-header")
-            article(0) = n.text
-        article(1) = (story \\ "p").map(_.text).filter(_ != "Please turn on JavaScript. Media requires JavaScript to play.").mkString(" ")
-      } catch {
-        case ne: NullPointerException => /* ignore */
-      }
-      article
-    } else Array("")
+      tuple._1 + "\n" + tuple._2
+    } else ""
   }
 
   def getNormVector(article: String, stopwords: Array[String]): Map[String, Int] = {

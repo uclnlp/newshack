@@ -53,8 +53,7 @@ object StoryFinder extends App {
   def queryWithMultipleIds(ids:Seq[String], limit:Int = 5, numStories:Int = 3, numArticles: Int = 5, numIdCombinations: Int = 5) = {
     val parameters = ids.map(id => ("tag",id)).toList ++
       List("class" -> "http://purl.org/ontology/storyline/Storyline",
-           //fetching a bit more stories to have enough instances for ranking
-           "limit" -> (limit*2).toString,
+           "limit" -> limit.toString,
            "tagop" -> "and")
     val result = Http("http://triplestore.bbcnewslabs.co.uk//api/things").
       option(_.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.2) Gecko/20100316 Firefox/3.6.2")).
@@ -64,24 +63,24 @@ object StoryFinder extends App {
     val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}").stories()
 
     //rank stories by similarity to input text
-    val sortedStories = stories.map(story => (story, similarity(currentInputText, storyToString(story)))).sortBy(-_._2)
+    //val sortedStories = stories.map(story => (story, similarity(currentInputText, storyToString(story)))).sortBy(-_._2)
 
     //using only top related stories
-    val filteredStories = sortedStories.take(numStories).map(t => {
-      val story = t._1
-      story.sim := t._2
-      story
-    })
+    val filteredStories = stories.take(numStories)
       .map(story => {
-      //using only most similar articles
-      val sortedArticles = story.tagged().take(1)
-        .map(article => (article, similarity(currentInputText, extract(article.uri()).mkString("\n")))).sortBy(-_._2)
-      story.tagged := sortedArticles.take(numArticles).map(t => {
-        val article = t._1
-        article.sim := t._2
-        article
-      })
-    })
+        //using only most similar articles
+        val sortedArticles = story.tagged().take(numArticles*2)
+          .map(article => (article, similarity(currentInputText, extract(article.uri())))).sortBy(-_._2)
+        story.tagged := sortedArticles.take(numArticles).map(t => {
+          val article = t._1
+          article.sim := t._2
+          article
+        })
+      }).map(story => {
+        val sims = story.tagged().map(_.sim())
+        story.sim := sims.sum / (1.0 * sims.size)
+        story
+      }).sortBy(-_.sim()).take(numStories)
     val resultStories = new JuicerResult().stories(filteredStories)
     resultStories.refId := ids
     resultStories
