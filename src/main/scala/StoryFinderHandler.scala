@@ -26,12 +26,13 @@ class StoryFinderGetHandler extends Actor {
 
 class StoryFinderPostHandler extends Actor {
   def receive = {
-    case event: HttpRequestEvent =>
+    case event: HttpRequestEvent => {
       val formDataMap = event.request.content.toFormDataMap
-      println(formDataMap)
-      println(event.request.content.toString())
-      println(event.request.content.toFormDataMap())
-      event.response.write("Hello from Socko POST (" + new Date().toString + ")")
+      val text = formDataMap.get("text").get.mkString("\n")
+      //the way it works is that you first do a POST with the up-to-date text and afterwards start with querying db entities
+      StoryFinder.currentInputText = text
+      event.response.write("Thanks for keeping me up-to-date! (" + new Date().toString + ")")
       context.stop(self)
+    }
   }
 }
