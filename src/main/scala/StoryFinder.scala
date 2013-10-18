@@ -51,7 +51,7 @@ object StoryFinder extends App {
     story.tagged().map(article => extract(article.uri())).mkString("\n")
   
   def queryWithMultipleIds(ids:Seq[String], limit:Int = 5, numStories:Int = 3, numArticles: Int = 5, numIdCombinations: Int = 5) = {
-    val parameters = ids.map(id => ("tag",id)).toList ++
+    val parameters = ids.distinct.map(id => ("tag",id)).toList ++
       List("class" -> "http://purl.org/ontology/storyline/Storyline",
            "limit" -> limit.toString,
            "tagop" -> "and")
