@@ -8,6 +8,8 @@ import scalaj.http.{HttpOptions, Http}
  */
 
 object StoryFinder extends App {
+  var currentInputText: String = ""
+
   class JuicerResult extends Frontlet {
     val stories = FrontletListSlot("stories", () => new Story)
     val refId = StringListSlot("refId")
