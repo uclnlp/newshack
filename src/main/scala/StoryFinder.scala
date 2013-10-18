@@ -44,7 +44,7 @@ object StoryFinder extends App {
     else result.toList
   }
 
-  def dummySimFunction(string1: String, string2: String): Double = if (string2.isEmpty) 0.0 else 1.0
+  def dummySimFunction(string1: String, string2: String): Double = if (string1.isEmpty || string2.isEmpty) 0.0 else 1.0
 
   def storyToString(story: Story): String =
     story.tagged().map(article => {
@@ -65,13 +65,16 @@ object StoryFinder extends App {
       option(HttpOptions.readTimeout(10000)).params(parameters)
     
     val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}").stories()
-    //rank stories by similarity to input text
-    //TODO get access to the input text over Postman POST statement
-    val sortedStories = stories.map(story => (story, dummySimFunction("MY_MAGIC_INPUT_TEXT_STRING", storyToString(story)))).sortBy(_._2)
 
-    // using only top related stories
+    //rank stories by similarity to input text
+    val sortedStories = stories.map(story => (story, dummySimFunction(currentInputText, storyToString(story)))).sortBy(_._2)
+
+    //using only top related stories
     val filteredStories = sortedStories.take(numStories).map(_._1).map(story => {
-      story.tagged := story.tagged().take(numArticles)
+      //using only most similar articles
+      val sortedArticles = story.tagged()
+        .map(article => (article, dummySimFunction(currentInputText, ArticleParser.extract(article.uri()).mkString("\n"))))
+      story.tagged := sortedArticles.take(numArticles).map(_._1)
     })
     val resultStories = new JuicerResult().stories(filteredStories)
     resultStories.refId := ids
@@ -81,7 +84,6 @@ object StoryFinder extends App {
   val dbpediaIds = args
   //val stories = searchStory(dbpediaIds)
   val stories = queryCombinations(dbpediaIds)
-  println(stories.mkString("\n"))
   stories.foreach(s => {
     println("Ids: " + s.refId().mkString(", "))
     s.stories().foreach(story => {
