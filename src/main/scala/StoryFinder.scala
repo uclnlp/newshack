@@ -1,4 +1,5 @@
 import org.riedelcastro.frontlets.Frontlet
+import scala.collection.mutable
 import scalaj.http.{HttpOptions, Http}
 import ArticleParser._
 
@@ -31,7 +32,7 @@ object StoryFinder extends App {
     val sim = DoubleSlot("sim")
   }  
 
-  def queryCombinations(ids: Seq[String], numCombinations: Int = 5, numStoryContainers: Int = 3) = {
+  def queryCombinations(ids: Seq[String], numCombinations: Int = 5, numStoryContainers: Int = 4) = {
     val queryCombinations =
       if (ids.size < numCombinations && ids.size >= 2) {
         for {
@@ -48,6 +49,20 @@ object StoryFinder extends App {
     else tempResult.toList
 
     val sortedResult = tempResult.sortBy(-_.sim()).take(numStoryContainers)
+
+    val coveredStories = new mutable.HashSet[String]()
+
+    //getting rid of stories already covered in another combination of entities
+    sortedResult.foreach(container => {
+      container.stories().filter(story => {
+        val title = story.title()
+        if (coveredStories.contains(title)) false
+        else {
+          coveredStories.add(title)
+          true
+        }
+      })
+    })
 
     sortedResult
   }
