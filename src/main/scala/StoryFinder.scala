@@ -1,5 +1,6 @@
 import org.riedelcastro.frontlets.Frontlet
 import scalaj.http.{HttpOptions, Http}
+import ArticleParser._
 
 /**
  * User: rockt
@@ -19,12 +20,14 @@ object StoryFinder extends App {
     val date = StringSlot("date")
     val uri = StringSlot("uri")
     val title = StringSlot("title")
+    val sim = DoubleSlot("sim")
   }
 
   class Story extends Frontlet {
     val date = StringSlot("date")
     val title = StringSlot("title")
     val tagged = FrontletListSlot("tagged", () => new Article)
+    val sim = DoubleSlot("sim")
   }  
 
   def queryCombinations(ids: Seq[String], numCombinations: Int = 5) = {
@@ -44,14 +47,8 @@ object StoryFinder extends App {
     else result.toList
   }
 
-  def dummySimFunction(string1: String, string2: String): Double = if (string1.isEmpty || string2.isEmpty) 0.0 else 1.0
-
   def storyToString(story: Story): String =
-    story.tagged().map(article => {
-      //rockt: too slow, hence currently commented out
-      //ArticleParser.extract(article.uri())
-      ""
-    }).mkString("\n")
+    story.tagged().map(article => extract(article.uri())).mkString("\n")
   
   def queryWithMultipleIds(ids:Seq[String], limit:Int = 5, numStories:Int = 3, numArticles: Int = 5, numIdCombinations: Int = 5) = {
     val parameters = ids.map(id => ("tag",id)).toList ++
@@ -67,14 +64,23 @@ object StoryFinder extends App {
     val stories = new JuicerResult().setJSON("{\"stories\": " + result.asString + "}").stories()
 
     //rank stories by similarity to input text
-    val sortedStories = stories.map(story => (story, dummySimFunction(currentInputText, storyToString(story)))).sortBy(_._2)
+    val sortedStories = stories.map(story => (story, similarity(currentInputText, storyToString(story)))).sortBy(-_._2)
 
     //using only top related stories
-    val filteredStories = sortedStories.take(numStories).map(_._1).map(story => {
+    val filteredStories = sortedStories.take(numStories).map(t => {
+      val story = t._1
+      story.sim := t._2
+      story
+    })
+      .map(story => {
       //using only most similar articles
-      val sortedArticles = story.tagged()
-        .map(article => (article, dummySimFunction(currentInputText, ArticleParser.extract(article.uri()).mkString("\n"))))
-      story.tagged := sortedArticles.take(numArticles).map(_._1)
+      val sortedArticles = story.tagged().take(1)
+        .map(article => (article, similarity(currentInputText, extract(article.uri()).mkString("\n")))).sortBy(-_._2)
+      story.tagged := sortedArticles.take(numArticles).map(t => {
+        val article = t._1
+        article.sim := t._2
+        article
+      })
     })
     val resultStories = new JuicerResult().stories(filteredStories)
     resultStories.refId := ids

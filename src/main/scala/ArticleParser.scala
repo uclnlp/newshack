@@ -1,4 +1,5 @@
 import scala.xml.Node
+import WebsiteCache._
 
 /**
  * Created with IntelliJ IDEA.
@@ -9,6 +10,7 @@ import scala.xml.Node
  */
 
 object ArticleParser {
+  lazy val stopwords = io.Source.fromURL("http://www.textfixer.com/resources/common-english-words.txt").mkString.split(",")
 
   def similarity(a: Map[String, Int], b: Map[String, Int]): Double = {
     if (a.isEmpty || b.isEmpty)
@@ -21,6 +23,9 @@ object ArticleParser {
     }
   }
 
+  def similarity(string1: String, string2: String): Double =
+    similarity(getNormVector(string1,stopwords), getNormVector(string2,stopwords))
+
   def time(f: => Unit) = {
     val s = System.currentTimeMillis
     f
@@ -28,20 +33,29 @@ object ArticleParser {
   }
 
   def extract(URL: String): Array[String] = {
-    var article = Array("", "")
-    val html = io.Source.fromURL(URL).mkString
-    val parser = new HTML5Parser
-    val parsed = parser.loadString(html)
-    var story: Node = null
-    for (n <- (parsed \\ "div")) {
-      if ((n \ "@class").text == "story-body")
-        story = n
-    }
-    for (n <- (story \\ "h1"))
-      if ((n \ "@class").text == "story-header")
-        article(0) = n.text
-    article(1) = (story \\ "p").map(_.text).filter(_ != "Please turn on JavaScript. Media requires JavaScript to play.").mkString(" ")
-    article
+    if (URL.startsWith("http://www.bbc.co.uk/news")) {
+      print("processing " + URL + "... ")
+      val start = System.currentTimeMillis()
+      var article = Array("", "")
+      val html = getHTML(URL)
+      val parser = new HTML5Parser
+      val parsed = parser.loadString(html)
+      println((System.currentTimeMillis() - start)/1000.0 + "ms")
+      var story: Node = null
+      try {
+        for (n <- (parsed \\ "div")) {
+          if ((n \ "@class").text == "story-body")
+            story = n
+        }
+        for (n <- (story \\ "h1"))
+          if ((n \ "@class").text == "story-header")
+            article(0) = n.text
+        article(1) = (story \\ "p").map(_.text).filter(_ != "Please turn on JavaScript. Media requires JavaScript to play.").mkString(" ")
+      } catch {
+        case ne: NullPointerException => /* ignore */
+      }
+      article
+    } else Array("")
   }
 
   def getNormVector(article: String, stopwords: Array[String]): Map[String, Int] = {
@@ -62,7 +76,6 @@ object ArticleParser {
     val URL1 = "http://www.bbc.co.uk/news/uk-24530186"
     val URL2 = "http://www.bbc.co.uk/news/uk-politics-24553611"
     val URL3 = "http://www.bbc.co.uk/news/uk-24575059"
-    val stopwords = io.Source.fromURL("http://www.textfixer.com/resources/common-english-words.txt").mkString.split(",")
     val article1 = extract(URL1)
     val article2 = extract(URL2)
     val article3 = extract(URL3)
