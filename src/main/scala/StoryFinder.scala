@@ -54,7 +54,7 @@ object StoryFinder extends App {
 
     //getting rid of stories already covered in another combination of entities
     sortedResult.foreach(container => {
-      container.stories().filter(story => {
+      val filteredStories = container.stories().filter(story => {
         val title = story.title()
         if (coveredStories.contains(title)) false
         else {
@@ -62,7 +62,9 @@ object StoryFinder extends App {
           true
         }
       })
+      container.stories := filteredStories
     })
+
 
     sortedResult
   }
@@ -115,10 +117,11 @@ object StoryFinder extends App {
     println("Ids: " + s.refId().mkString(", "))
     s.stories().foreach(story => {
     println("\tTitle: " + story.title())
-    story.tagged().foreach(article => {
+/*    story.tagged().foreach(article => {
       println("\t\tArticle: " + article.title())
       println("\t\t\tURI:" + article.uri())
     })
+*/
   })}
   )
 }
