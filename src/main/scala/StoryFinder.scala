@@ -66,6 +66,9 @@ object StoryFinder extends App {
       container.stories := filteredStories
     })
 
+
+
+
     //re-calculating container similarities
     sortedResult.foreach(container => {
       val stories = container.stories()
@@ -77,12 +80,11 @@ object StoryFinder extends App {
         counter += 1
         s
       }) //cumbersome, but otherwise the stories get erased. bug in Frontlet?
-      container.sim := (if (counter == 0) 0.0 else aggr / counter)
+      container.sim := (if (counter == 0) -1.0 else aggr / counter)
       container
     })
 
     sortedResult.sortBy(-_.sim())
-    sortedResult
   }
 
   def storyToString(story: Story): String =
@@ -119,7 +121,7 @@ object StoryFinder extends App {
     val resultStories = new StoriesContainer().stories(filteredStories)
     resultStories.refId := ids
     val sims = filteredStories.map(_.sim())
-    resultStories.sim := sims.sum / (1.0 * sims.size) 
+    resultStories.sim := sims.sum / (1.0 * sims.size)
     resultStories
   }
 
