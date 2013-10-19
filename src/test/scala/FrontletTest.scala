@@ -59,15 +59,14 @@ object FrontletTest extends App {
   })
   println(s"frontception after filter: $frontception") //fine
 
-//  frontception.composites := frontception.composites().filterNot(_.basics().isEmpty)
-//  println(s"frontception after non-empty filter: $frontception") //fine
+  frontception.composites := frontception.composites().filterNot(c => c.basics().isEmpty)
+  println(s"frontception after non-empty filter: $frontception") //fine
 
 
   //trying to reproduce the error during BBC newsHACK
   //val bucket = frontception.composites()
   val bucket = List(frontception)
   bucket.toSeq.foreach(f => {
-    //println(f.composites().size)
     f.composites().foreach(c => println(c.title()))
     println(f.composites().size)
   })
