@@ -70,29 +70,17 @@ object StoryFinder extends App {
       })
     })
 
-    /*
+    val container = new RelevanceContainer
+    container.containers := sortedResult.filterNot(_.stories().isEmpty)
+
     //re-calculating container similarities
-    sortedResult.foreach(container => {
-      println("---")
-      println(container.stories().size) //depending on whether I include this line, the next line will print something reasonable
-      container.stories().foreach(s => println("\t" + s.title()))
-      print(container.stories().size + " ")
-      print(container.refId().toString().takeRight(10) + " ")
+    container.containers().foreach(container => {
       val sims = container.stories().map(_.sim())
       container.sim := (if (sims.size == 0) 0.0 else sims.sum / (1.0 * sims.size))
-      print("[" + container.sim() + "]")
-      print(" " + container.refId().toString().takeRight(10))
-      println(" " + container.stories().size)
-      container.stories().foreach(s => println("\t" + s.title()))
-      println("---")
     })
-    */
-    val container = new RelevanceContainer
-    container.containers := sortedResult.sortBy(-_.sim())
 
-    //sortedResult.sortBy(-_.sim())//.filterNot(c => c.stories().isEmpty) //this srcews up everything!? why???
-    container.containers := container.containers().filterNot(_.stories().isEmpty) //does not work either
-
+    //re-sorting
+    container.containers := container.containers().sortBy(-_.sim())
     container.containers()
  }
 
@@ -135,21 +123,12 @@ object StoryFinder extends App {
   }
 
   val dbpediaIds = args
-  //val stories = searchStory(dbpediaIds)
   val stories = queryCombinations(dbpediaIds)
   stories.foreach(s => {
-    println("---")
     println("Ids: " + s.refId().mkString(", "))
-    println("#stories: " + s.stories().size)
     s.stories().foreach(story => {
       println("\tTitle: " + story.title())
-/*    story.tagged().foreach(article => {
-      println("\t\tArticle: " + article.title())
-      println("\t\t\tURI:" + article.uri())
     })
-*/
-    })
-    //println("#stories: " + s.stories().size)
   })
 }
 
