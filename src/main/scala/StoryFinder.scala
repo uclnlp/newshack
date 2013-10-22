@@ -30,7 +30,11 @@ object StoryFinder extends App {
     val title = StringSlot("title")
     val tagged = FrontletListSlot("tagged", () => new Article)
     val sim = DoubleSlot("sim")
-  }  
+  }
+
+  class RelevanceContainer extends Frontlet {
+    val containers = FrontletListSlot("containers", () => new StoriesContainer)
+  }
 
   def queryCombinations(ids: Seq[String], numCombinations: Int = 5, numStoryContainers: Int = 4) = {
     val distinctIds = ids.toList.distinct
@@ -46,16 +50,17 @@ object StoryFinder extends App {
 
     val tempResult = (queryCombinations ++ singleQueries).filter(story => !story.stories().isEmpty)
 
-    if (distinctIds.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: tempResult.toList
-    else tempResult.toList
+    val tempResult2 =
+      if (distinctIds.size > numCombinations && !combinedQuery.stories().isEmpty) combinedQuery :: tempResult.toList
+      else tempResult.toList
 
-    val sortedResult = tempResult.sortBy(-_.sim()).take(numStoryContainers)
+    val sortedResult = tempResult2.sortBy(-_.sim()).take(numStoryContainers)
 
     val coveredStories = new mutable.HashSet[String]()
 
     //getting rid of stories already covered in another combination of entities
     sortedResult.foreach(container => {
-      val filteredStories = container.stories().filter(story => {
+      container.stories := container.stories().filter(story => {
         val title = story.title()
         if (coveredStories.contains(title)) false
         else {
@@ -63,29 +68,33 @@ object StoryFinder extends App {
           true
         }
       })
-      container.stories := filteredStories
     })
 
-
-
-
+    /*
     //re-calculating container similarities
     sortedResult.foreach(container => {
-      val stories = container.stories()
-      val sims = List(1.0)
-      var aggr = 0.0
-      var counter = 0
-      stories.map(s => {
-        aggr += s.sim()
-        counter += 1
-        s
-      }) //cumbersome, but otherwise the stories get erased. bug in Frontlet?
-      container.sim := (if (counter == 0) -1.0 else aggr / counter)
-      container
+      println("---")
+      println(container.stories().size) //depending on whether I include this line, the next line will print something reasonable
+      container.stories().foreach(s => println("\t" + s.title()))
+      print(container.stories().size + " ")
+      print(container.refId().toString().takeRight(10) + " ")
+      val sims = container.stories().map(_.sim())
+      container.sim := (if (sims.size == 0) 0.0 else sims.sum / (1.0 * sims.size))
+      print("[" + container.sim() + "]")
+      print(" " + container.refId().toString().takeRight(10))
+      println(" " + container.stories().size)
+      container.stories().foreach(s => println("\t" + s.title()))
+      println("---")
     })
+    */
+    val container = new RelevanceContainer
+    container.containers := sortedResult.sortBy(-_.sim())
 
-    sortedResult.sortBy(-_.sim())
-  }
+    //sortedResult.sortBy(-_.sim())//.filterNot(c => c.stories().isEmpty) //this srcews up everything!? why???
+    container.containers := container.containers().filterNot(_.stories().isEmpty) //does not work either
+
+    container.containers()
+ }
 
   def storyToString(story: Story): String =
     story.tagged().map(article => extract(article.uri())).mkString("\n")
@@ -129,16 +138,19 @@ object StoryFinder extends App {
   //val stories = searchStory(dbpediaIds)
   val stories = queryCombinations(dbpediaIds)
   stories.foreach(s => {
+    println("---")
     println("Ids: " + s.refId().mkString(", "))
+    println("#stories: " + s.stories().size)
     s.stories().foreach(story => {
-    println("\tTitle: " + story.title())
+      println("\tTitle: " + story.title())
 /*    story.tagged().foreach(article => {
       println("\t\tArticle: " + article.title())
       println("\t\t\tURI:" + article.uri())
     })
 */
-  })}
-  )
+    })
+    //println("#stories: " + s.stories().size)
+  })
 }
 
 /*
